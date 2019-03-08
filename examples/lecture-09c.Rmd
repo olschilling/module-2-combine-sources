@@ -1,0 +1,92 @@
+---
+title: "Lecture 08c Notebook"
+author: "Christopher Prener, Ph.D."
+date: '(`r format(Sys.time(), "%B %d, %Y")`)'
+output: 
+  github_document: default
+  html_notebook: default 
+---
+
+## Introduction
+This is the lecture notebook for Lecture-08c from the course SOC 4650/5650: Introduction to GISc. 
+
+## Load Dependencies
+The following code loads the package dependencies for our analysis:
+
+```{r package-load}
+library(ggplot2) # data plotting
+library(dplyr) # data wrangling
+library(sf) # spatial data tools
+library(tigris) # access census data
+```
+
+## Download States and Counties
+### State Data
+We can download a generalized version, which smooths out state boundaries so that the overall image is both smaller in disk size and (sometimes) easier to read. This is particularly helpful if you are making small scale maps of the entire United States. The `cb = TRUE` argument gives us the generalized data. We'll download the generalized data at the most accurate level - `500k`. 
+
+```{r get-states}
+states <- states(cb = TRUE, resolution = "500k")
+```
+
+The data come into `R` as `sp` objects, which are different than the `sf` objects we have been working with this semester. We can use the `st_as_sf()` function to convert it to an `sf` object that we then can use `dplyr` functions like `filter()` to modify:
+
+```{r}
+states %>%
+  st_as_sf() %>%
+  filter(NAME == "Missouri") -> mo
+```
+
+Once we have the data in `sf` format, we can then map them using `ggplot2`:
+
+```{r}
+ggplot() +
+  geom_sf(data = mo)
+```
+
+### County Data
+The county data from `tigris` can be similarly downloaded by using `counties()`:
+
+```{r}
+moCounties <- counties(state = "Missouri", cb = TRUE, resolution = "20m")
+```
+
+As before, we need to make sure we convert the object `moCounties` from `sp` to `sf` by using the `st_as_sf()` function. Since we're not subsetting any data this time, we don't need to include it in a pipe.
+
+```{r}
+moCounties <- st_as_sf(moCounties)
+```
+
+Finally, we can map our very generalized county boundary data using `ggplot2` as usual:
+
+```{r}
+ggplot() +
+  geom_sf(data = moCounties)
+```
+
+## Census Geography
+Census geography at multiple levels can be downloaded using a series of functions - `tracts()`, `block_groups()`, and `blocks()`. Here, we'll download the census tracts for the City of St. Louis using both the state and county FIPS codes:
+
+```{r}
+stlTracts <- tracts(state = 29, county = 510)
+```
+
+We could also use strings like "Missouri" and "St. Louis city" for these respective arguments.
+
+As we have done above, we can convert our `stlTracts` object to an `sf` object before we map it using `ggplot2`:
+
+```{r}
+stlTracts <- st_as_sf(stlTracts)
+
+ggplot() +
+  geom_sf(data = stlTracts)
+```
+
+Finally, here is what the syntax for downloading the census block group data looks like:
+
+```{r}
+stlBG <- block_groups(state = 29, county = 510)
+```
+
+
+
+
