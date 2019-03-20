@@ -1,0 +1,106 @@
+---
+title: "Lab 08 Replication Notebook"
+author: "Christopher Prener, Ph.D."
+date: '(`r format(Sys.time(), "%B %d, %Y")`)'
+output: 
+  github_document: default
+  html_notebook: default 
+---
+
+## Introduction
+This is the replication notebook for Lab-08 from the course SOC 4650/5650: Introduction to GISc. 
+
+## Load Dependencies
+The following code loads the package dependencies for our analysis:
+
+```{r package-load}
+# tidyverse packages
+library(readr)      # csv tools
+
+# spatial packages
+library(sf)         # spatial data tools
+library(tidycensus) # data wrangling
+library(tigris)     # data wrangling
+
+# other packages
+library(here)       # file path tools
+```
+
+## Part 1
+### Question 1
+First, we'll download and preview the variables using the `load_variables()` function from `tidycensus`.
+
+```{r preview-vars}
+acs <- load_variables(2017, "acs5", cache = TRUE)
+```
+
+The variable represents "PUBLIC ASSISTANCE INCOME OR FOOD STAMPS/SNAP IN THE PAST 12 MONTHS FOR HOUSEHOLDS".
+
+### Question 2
+First, we'll download the relevant ACS data using `get_acs()`. We get the data for all counties by specifying `"county"` as the geography:
+
+```{r download-snap-counties}
+snapCounties <- get_acs(geography = "county", year = 2016, state = 29, variable = "B19058_002", survey = "acs5")
+```
+
+With those downloaded and written to an object in our global environment, we can use `readr` to write them to a `.csv` file:
+
+```{r write-snap-counties}
+write_csv(snapCounties, here("data", "MO_SNAP_HouseholdsByCounty.csv"))
+```
+
+We now have the raw data saved to our `data/` folder.
+
+### Question 6
+First, we'll download the relevant ACS data using `get_acs()`. We get the data for tracts in St. Louis County by specifying `"tract"` as the geography and `189` for the county:
+
+```{r download-snap-tracts}
+snapTracts <- get_acs(geography = "tract", year = 2016, state = 29, county = 189, variable = "B19058_002", survey = "acs5")
+```
+
+With those downloaded and written to an object in our global environment, we can use `readr` to write them to a `.csv` file:
+
+```{r write-snap-tracts}
+write_csv(snapCounties, here("data", "SLC_SNAP_HouseholdsByTract.csv"))
+```
+
+We now have the raw data saved to our `data/` folder.
+
+## Part 3
+### Question 7
+Now we'll download geometric data to go along with our tabular data. We'll start by downloading the county boundary data and converting it to an sf object. The video shows you how to do this process in two steps:
+
+```r
+moCounties <- counties(state = 29, cb = FALSE)
+moCounties <- st_as_sf(moCounties)
+```
+
+However, there is now an option within `tigris` to do it in a single call:
+
+```{r download-county-geometry}
+moCounties <- counties(state = 29, cb = FALSE, class = "sf")
+```
+
+Once downloaded, we'll save the sf object as a `.shp` file:
+
+```{r write-county-geometry}
+st_write(moCounties, here("data", "MO_BOUNDARY_Counties.shp"))
+```
+
+We now have the raw data saved to our `data/` folder.
+
+### Question 8
+Now we'll download geometric data to go along with our tabular data. We'll start by downloading the tract boundary data for St. Louis County and converting it to an sf object:
+
+```{r download-tract-geometry}
+slcTracts <- tracts(state = 29, county = 189, cb = FALSE)
+slcTracts <- st_as_sf(slcTracts)
+```
+
+Once downloaded, we'll save the sf object as a `.shp` file:
+
+```{r write-tract-geometry}
+st_write(slcTracts, here("data", "SLC_DEMOS_Tracts.shp"))
+```
+
+We now have the raw data saved to our `data/` folder.
