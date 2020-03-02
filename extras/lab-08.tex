@@ -14,7 +14,7 @@
 % define the title
 \title{SOC 4650/5650: Lab-08 - Accessing Demographic Data}
 \author{Christopher Prener, Ph.D.}
-\date{Spring 2019}
+\date{Spring 2020}
 % ============================================================
 \begin{document}
 % ============================================================
@@ -23,7 +23,7 @@
 
 \vspace{5mm}
 \section{Directions}
-Using data accessed from \texttt{tidycensus} and \texttt{tigris}, create \texttt{.csv} and \texttt{.shp} files describing SNAP benefit useage in Missouri and St. Louis County. Your entire project folder system, including data and RMarkdown output, should be uploaded to GitHub by \textbf{Wednesday, March 20\textsuperscript{th}} at 5:00pm.
+Using data accessed from \texttt{tidycensus} and \texttt{tigris}, create \texttt{.csv} and \texttt{.shp} files describing SNAP benefit useage in Missouri and St. Louis County. Your entire project folder system, including data and RMarkdown output, should be uploaded to GitHub by \textbf{Monday, March 16\textsuperscript{th}} at 4:15pm.
 
 \section{Analysis Development}
 The goal of this section is to create a self contained project directory with all of the data, code, map documents, results, and documentation a project needs. Please ensure \textbf{all} required elements are present.
@@ -32,7 +32,7 @@ The goal of this section is to create a self contained project directory with al
 \section{Part 1: Download County Data}
 The goal of this section is to be able to create a shapefile with SNAP benefit data for counties in Missouri and one for SNAP benefit data for census tracts in St. Louis.
 \begin{enumerate}
-\item Download the list of variables for the 2017 American Community Survey, and find the variable \texttt{B19058\_002} - what is its description?\sidenote{\textit{Hint:} Hover your mouse over the field if some of the text is obscured, and the full text will appear as a ``tooltip''.}
+\item Download the list of variables for the 2018 American Community Survey, and find the variable \texttt{B19058\_002} - what is its description?\sidenote{\textit{Hint:} Hover your mouse over the field if some of the text is obscured, and the full text will appear as a ``tooltip''.}
 \item Download the data for variable \texttt{B19058\_002} for each county in Missouri.
 \item Download a shapefile of all counties in Missouri that \textit{is not} generalized. 
 \item Use data cleaning functions to limit and rename columns as necessary, and then join your tabular data to your geometric data before you export them as a shapefile.
