@@ -15,9 +15,10 @@ The following code loads the package dependencies for our analysis:
 
 ```{r package-load}
 # tidyverse packages
-library(readr)      # csv tools
+library(dplyr)      # data wrangling
 
 # spatial packages
+library(mapview)    # preview spatial data
 library(sf)         # spatial data tools
 library(tidycensus) # data wrangling
 library(tigris)     # data wrangling
@@ -31,7 +32,7 @@ library(here)       # file path tools
 First, we'll download and preview the variables using the `load_variables()` function from `tidycensus`.
 
 ```{r preview-vars}
-acs <- load_variables(2017, "acs5", cache = TRUE)
+acs <- load_variables(2018, "acs5", cache = TRUE)
 ```
 
 The variable represents "PUBLIC ASSISTANCE INCOME OR FOOD STAMPS/SNAP IN THE PAST 12 MONTHS FOR HOUSEHOLDS".
@@ -40,67 +41,120 @@ The variable represents "PUBLIC ASSISTANCE INCOME OR FOOD STAMPS/SNAP IN THE PAS
 First, we'll download the relevant ACS data using `get_acs()`. We get the data for all counties by specifying `"county"` as the geography:
 
 ```{r download-snap-counties}
-snapCounties <- get_acs(geography = "county", year = 2016, state = 29, variable = "B19058_002", survey = "acs5")
+snapCounties <- get_acs(geography = "county", year = 2018, state = 29, variable = "B19058_002", survey = "acs5")
 ```
 
-With those downloaded and written to an object in our global environment, we can use `readr` to write them to a `.csv` file:
-
-```{r write-snap-counties}
-write_csv(snapCounties, here("data", "MO_SNAP_HouseholdsByCounty.csv"))
-```
-
-We now have the raw data saved to our `data/` folder.
-
-### Question 6
-First, we'll download the relevant ACS data using `get_acs()`. We get the data for tracts in St. Louis County by specifying `"tract"` as the geography and `189` for the county:
-
-```{r download-snap-tracts}
-snapTracts <- get_acs(geography = "tract", year = 2016, state = 29, county = 189, variable = "B19058_002", survey = "acs5")
-```
-
-With those downloaded and written to an object in our global environment, we can use `readr` to write them to a `.csv` file:
-
-```{r write-snap-tracts}
-write_csv(snapCounties, here("data", "SLC_SNAP_HouseholdsByTract.csv"))
-```
-
-We now have the raw data saved to our `data/` folder.
-
-## Part 3
-### Question 7
+### Question 3
 Now we'll download geometric data to go along with our tabular data. We'll start by downloading the county boundary data and converting it to an sf object. The video shows you how to do this process in two steps:
 
 ```r
-moCounties <- counties(state = 29, cb = FALSE)
-moCounties <- st_as_sf(moCounties)
+counties <- counties(state = 29, cb = FALSE)
+counties <- st_as_sf(counties)
 ```
 
 However, there is now an option within `tigris` to do it in a single call:
 
-```{r download-county-geometry}
-moCounties <- counties(state = 29, cb = FALSE, class = "sf")
+```{r download-counties}
+counties <- counties(state = 29, cb = FALSE, class = "sf")
 ```
 
-Once downloaded, we'll save the sf object as a `.shp` file:
+This makes it just a bit quicker to get mappable results. We can preview our shapefile with `mapview`:
 
-```{r write-county-geometry}
-st_write(moCounties, here("data", "MO_BOUNDARY_Counties.shp"))
+```{r preview-counties}
+mapview(counties)
 ```
 
-We now have the raw data saved to our `data/` folder.
+### Question 4
+Next, we'll clean and merge our data. First, we'll clean our county geometry data, retaining only the `GEOID` column:
 
-### Question 8
-Now we'll download geometric data to go along with our tabular data. We'll start by downloading the tract boundary data for St. Louis County and converting it to an sf object:
-
-```{r download-tract-geometry}
-slcTracts <- tracts(state = 29, county = 189, cb = FALSE)
-slcTracts <- st_as_sf(slcTracts)
+```{r clean-counties}
+counties <- select(counties, GEOID)
 ```
 
-Once downloaded, we'll save the sf object as a `.shp` file:
+Then we'll tidy up the demographic data:
 
-```{r write-tract-geometry}
-st_write(slcTracts, here("data", "SLC_DEMOS_Tracts.shp"))
+```{r clean-snap}
+snapCounties %>%
+  rename(
+    snap = estimate,
+    snap_moe = moe
+  ) %>%
+  select(-variable) -> snapCounties
 ```
 
-We now have the raw data saved to our `data/` folder.
+Finally, we'll combine our data:
+
+```{r join-counties}
+snapCounties <- left_join(counties, snapCounties, by = "GEOID")
+```
+
+Again, we'll preview our data with `mapview`:
+
+```{r preview-joined-counties}
+mapview(snapCounties, zcol = "snap")
+```
+
+The `zcol` argument allows us to map the values of a particular variable as part of our preview.
+
+Finally, we'll write these data as a `.shp` file:
+
+```{r write-counties}
+st_write(snapCounties, dsn = here("data", "MO_SNAP_Households", "MO_SNAP_Households.shp"), delete_dsn = TRUE)
+```
+
+## Part 2
+### Question 5
+First, we'll download the relevant ACS data using `get_acs()`. We get the data for all tracts by specifying `"tract"` as the geography and specifying `189` for the `county` argument:
+
+```{r download-snap-tracts}
+snapTracts <- get_acs(geography = "tract", year = 2018, state = 29, county = 189, variable = "B19058_002", survey = "acs5")
+```
+
+### Question 6
+Now we'll download geometric data to go along with our tabular data:
+
+```{r download-tracts}
+tracts <- tracts(state = 29, county = 189, cb = FALSE, class = "sf")
+```
+
+We can preview our shapefile with `mapview`:
+
+```{r preview-tracts}
+mapview(tracts)
+```
+
+### Question 7
+Next, we'll clean and merge our data. First, we'll clean our county geometry data, retaining only the `GEOID` column:
+
+```{r clean-tracts}
+tracts <- select(tracts, GEOID)
+```
+
+Then we'll tidy up the demographic data:
+
+```{r clean-snap-tracts}
+snapTracts %>%
+  rename(
+    snap = estimate,
+    snap_moe = moe
+  ) %>%
+  select(-variable) -> snapTracts
+```
+
+Finally, we'll combine our data:
+
+```{r join-tracts}
+snapTracts <- left_join(tracts, snapTracts, by = "GEOID")
+```
+
+Again, we'll preview our data with `mapview`:
+
+```{r preview-joined-tracts}
+mapview(snapTracts, zcol = "snap")
+```
+
+Finally, we'll write these data as a `.shp` file:
+
+```{r write-tracts}
+st_write(snapTracts, dsn = here("data", "STL_SNAP_Households", "STL_SNAP_Households.shp"), delete_dsn = TRUE)
+```
