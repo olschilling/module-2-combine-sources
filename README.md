@@ -7,7 +7,7 @@ module-2-data-cleaning <img src="https://slu-soc5650.github.io/images/icon_hu137
 [![](https://img.shields.io/github/repo-size/slu-soc5650/module-2-data-cleaning.svg)](https://github.com/slu-soc5650/module-2-data-cleaning)
 
 ## Module 2 - Data Cleaning
-These materials correspond to the fifth course meeting of SOC 4650 and SOC 5650.
+These materials correspond to the fifth course meeting of SOC 4650 and SOC 5650, which is focused on `tigris`, `tidycensus`, and joining data soruces
 
 ## Lesson Quick Start
 ### Install Software
