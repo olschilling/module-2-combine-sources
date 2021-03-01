@@ -1,0 +1,1 @@
+The data in this assignment were obtained from the U.S. Census Bureau using the `tidycensus` and `tigris` packages. They were not modified further after downloading - the raw data were saved into the `data/` folder for later use.

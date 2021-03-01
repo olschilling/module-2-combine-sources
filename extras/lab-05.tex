@@ -1,0 +1,58 @@
+\documentclass{tufte-handout}
+
+\usepackage{xcolor}
+
+% set image attributes:
+\usepackage{graphicx}
+\graphicspath{ {images/} }
+
+% set hyperlink attributes
+\hypersetup{colorlinks}
+
+% ============================================================
+
+% define the title
+\title{SOC 4650/5650: Lab-05 - Combining Social Service Data}
+\author{Christopher Prener, Ph.D.}
+\date{Spring 2021}
+% ============================================================
+\begin{document}
+% ============================================================
+\maketitle % generates the title
+% ============================================================
+
+\vspace{5mm}
+\section{Directions}
+Using data accessed from \texttt{tidycensus}, create a \texttt{sf} object describing Medicaid and SNAP benefit usage in Missouri. Your entire project folder system, including RMarkdown output, should be uploaded to GitHub by \textbf{Monday, March 8\textsuperscript{th}} at 4:15pm.
+
+\section{Analysis Development}
+The goal of this section is to create a self contained project directory with all of the data, code, map documents, results, and documentation a project needs. Please ensure \textbf{all relevant} elements are present.
+
+\vspace{5mm}
+\section{Part 1: Download SNAP Data}
+The goal of this section is to be able to create a \texttt{sf} object with SNAP benefit data for counties in Missouri.
+\begin{enumerate}
+\item Download the list of variables for the 2019 American Community Survey, and find the variables \texttt{B19058\_002} and \texttt{C27007\_002} - what are their descriptions?\sidenote{\textit{Hint:} Hover your mouse over the field if some of the text is obscured, and the full text will appear as a ``tooltip''.}
+\item Download the data for variables \texttt{B19058\_001} and \texttt{B19058\_002} for each county in Missouri.
+\item Use data cleaning functions to rename columns to clearer names as necessary.\sidenote{\textit{Hint:} We generally leave \texttt{GEOID} and \texttt{NAME} alone, but rename columns for specific Census measures.}
+\end{enumerate}
+
+\vspace{5mm}
+\section{Part 2: Download Medicaid Data}
+The goal of this section is to be able to create a data frame object with Medicaid benefit data for counties in Missouri.
+\begin{enumerate}
+\setcounter{enumi}{3}
+\item Download the data for variables \texttt{C27007\_002} and \texttt{C27007\_012} for each county in Missouri.
+\item Use data cleaning functions to limit and rename columns to clearer names as necessary. You should also sum the male and female Medicaid counts you downloaded in the previous step into one measure for each county. You should also remove the \texttt{NAME} column, since it already appears in your SNAP data.\sidenote{\textit{Hint:} You can use the \texttt{mutate} function along with mathematical operators like \texttt{+} or \texttt{-} to calculate new measures.}
+\end{enumerate}
+
+\vspace{5mm}
+\section{Part 3: Join Data}
+The goal of this section is to be able to combine the data created in Parts 1 and 2.
+\begin{enumerate}
+\setcounter{enumi}{5}
+\item Join your SNAP and Medicaid data together, and use \texttt{mapview} to ensure your geometric data are stored correctly.
+\end{enumerate}
+
+% ============================================================
+\end{document}

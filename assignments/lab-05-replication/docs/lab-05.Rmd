@@ -1,0 +1,118 @@
+---
+title: "Lab-05 Replication Notebook"
+author: "Christopher Prener, Ph.D."
+date: '(`r format(Sys.time(), "%B %d, %Y")`)'
+output: 
+  github_document: default
+  html_notebook: default 
+---
+
+```{r setup}
+knitr::opts_chunk$set(cache = FALSE)
+```
+
+## Introduction
+This is the replication notebook for Lab-05 from the course SOC 4650/5650: Introduction to GISc.
+
+## Load Dependencies
+The following code loads the package dependencies for our analysis:
+
+```{r package-load}
+# tidyverse packages
+library(dplyr)      # data wrangling
+
+# spatial packages
+library(mapview)    # preview spatial data
+library(sf)         # spatial data tools
+library(tidycensus) # data wrangling
+library(tigris)     # data wrangling
+
+# other packages
+library(here)       # file path tools
+```
+
+## Part 1
+### Question 1
+First, we'll download and preview the variables using the `load_variables()` function from `tidycensus`.
+
+```{r preview-vars}
+acs <- load_variables(2019, "acs5", cache = TRUE)
+```
+
+The variables we need represent:
+
+  * `"PUBLIC ASSISTANCE INCOME OR FOOD STAMPS/SNAP IN THE PAST 12 MONTHS FOR HOUSEHOLDS"`
+  * `"MEDICAID/MEANS-TESTED PUBLIC COVERAGE BY SEX BY AGE"`
+
+### Question 2
+First, we'll download the relevant ACS data using `get_acs()`. We get the data for all counties by specifying `"county"` as the geography:
+
+```{r download-snap-counties}
+snapCounties <- get_acs(geography = "county", year = 2019, state = 29, 
+                        variables = c("B19058_001", "B19058_002"),
+                        output = "wide", geometry = TRUE)
+```
+
+We can preview our geometric data with `mapview`:
+
+```{r preview-snap-counties}
+mapview(snapCounties)
+```
+
+### Question 3
+Next, we'll clean our data by renaming variables:
+
+```{r clean-snap}
+snapCounties %>%
+  rename(
+    total_pop = B19058_001E,
+    total_pop_moe = B19058_001M,
+    snap = B19058_002E,
+    snap_moe = B19058_002M
+  ) -> snapCounties
+```
+
+## Part 2
+### Question 4
+Next, we'll download the relevant ACS data for Medicaid using `get_acs()`:
+
+```{r download-medicaid}
+medicaidCounties <- get_acs(geography = "county", year = 2019, state = 29, 
+                        variables = c("C27007_002", "C27007_012"),
+                        output = "wide", geometry = FALSE)
+```
+
+Now we have the number of male and female Medicaid recipients.
+
+### Question 5
+Next, we'll tidy up the demographic data, including by renaming variables and summing our male and female Medicaid estimates:
+
+```{r clean-snap-tracts}
+medicaidCounties %>%
+  rename(
+    medicaid_male = C27007_002E,
+    medicaid_male_moe = C27007_002M,
+    medicaid_female = C27007_012E,
+    medicaid_female_moe = C27007_012M
+  ) %>%
+  mutate(medicaid = medicaid_male + medicaid_female) %>%
+  select(-NAME) -> medicaidCounties
+```
+
+Now our data are ready to join with our SNAP recipiency data!
+
+## Part 3
+### Question 6
+Finally, we'll combine our data:
+
+```{r join-counties}
+services <- left_join(snapCounties, medicaidCounties, by = "GEOID")
+```
+
+To make sure things went correctly, we'll preview our data again:
+
+```{r preview-counties}
+mapview(services, zcol = "medicaid")
+```
+
+Our data map correctly!

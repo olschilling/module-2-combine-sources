@@ -1,0 +1,190 @@
+---
+title: "Meeting Examples - Complete"
+author: "Christopher Prener, PhD"
+date: '(`r format(Sys.time(), "%B %d, %Y")`)'
+output: 
+  github_document: default
+  html_notebook: default 
+---
+
+```{r setup}
+knitr::opts_chunk$set(cache = FALSE)
+```
+
+## Introduction
+This notebook illustrates data access through both `tigris` and `tidycensus` as well as joins using `dplyr`.
+
+## Dependencies
+This notebook requires the following packages:
+
+```{r load-packages}
+# tidyverse packages
+library(dplyr)       # data wrangling
+
+# spatial packages
+library(mapview)     # preview geometric data
+library(sf)          # spatial tools
+library(tidycensus)  # demographic data
+library(tigris)      # tiger/line data
+
+# other packages
+library(here)        # file path management
+```
+
+## tidycensus Set-up
+Before using `tidycensus`, you need to install a census API key. Use the syntax below, copied into your console, to install the key you received via email.
+
+```r
+census_api_key("KEY", install = TRUE)
+```
+
+This is not a code chunk you will need in each notebook. As long as `install = TRUE`, you will only have to do this once!
+
+## Decennial Census Data
+### Get List of Variables
+To get a preview of variables available in the `get_decennial()` function, we can use the `load_variables()` function:
+
+```{r preview-census}
+census <- load_variables(year = 2000, dataset = "sf1") 
+```
+
+I find it useful to assign the output of this function to an object so that I can search through it. Try searching for the variable `P0010001`, the total population of a geographic unit, in the `census` object.
+
+### Download a Single Variable
+To download data, we can use use the `get_decennial()` function to access, for example, population by state in 2000:
+
+```{r census-state-pop, results = "hide"}
+popStates <- get_decennial(geography = "state", year = 2000, variable = "P001001")
+```
+
+A full list of the geographies available in `tidycensus` can be found [here](https://walker-data.com/tidycensus/articles/basic-usage.html#geography-in-tidycensus-1).
+
+### Download a Full Table
+Most variables in the decennial census are actually a part of a table. There are individual variables, for example, for race:
+
+```{r show-variables}
+census %>%
+  filter(concept == "P3. RACE [8]")
+```
+
+We rarely want to download these one at a time. Instead, we want to download them at one time into a single data frame. The table number for these data is `P003` - we take the first four characters from the `name` variable.
+
+```{r census-stl-race, results = "hide"}
+cityRace00 <- get_decennial(geography = "tract", year = 2000, state = 29,
+                            county = "510", table = "P003", output = "wide")
+```
+
+We've used the FIPS codes for both Missouri (`29`) and St. Louis City (`29510`) here - you can find a full list of Missouri counties [here](https://www.msdis.missouri.edu/resources/fips.html).
+
+### Add Geometry
+The `tidycensus` package also includes tools for downloading the geometries for these data as well. For instance, we can add geometric data to our previous call for City of St. Louis tract-level data on race by adding the `geometry = TRUE` argument:
+
+```{r}
+## download
+cityRace00 <- get_decennial(geography = "tract", year = 2000, state = 29,
+                            county = "510", table = "P003", output = "wide",
+                            geometry = TRUE)
+
+## preview
+mapview(cityRace00, zcol = "P003005")
+```
+
+Notice how I used the `zcol` argument for `mapview()` to preview a specific set of data as a thematic layer on the map! These data are not normalized, but we do get a quick preview of the distribution of Asian residents in St. Louis City.
+
+## Decennial Census Data
+### Get List of Variables
+To get a preview of variables available in the `get_acs()` function, we can use the `load_variables()` function again. We'll use `"acs5"` for our dataset and, for this example, we'll pull from the most recent 2019 ACS year:
+
+```{r preview-acs}
+census <- load_variables(year = 2019, dataset = "acs5") 
+```
+
+Try searching for the table `B19013`, the median household income table.
+
+### Get and Interpret ACS Data
+We'll illustrate `get_acs()` by using the data in table `B19019`. First, we'll download these data as a full table for all counties in Missouri:
+
+```{r median-income-1}
+## download
+countyIncome <- get_acs(geography = "county", year = 2019, state = 29,
+                        table = "B19019", output = "wide", geometry = TRUE)
+
+## preview
+mapview(countyIncome, zcol = "B19019_001E")
+```
+
+Notice how we needed to specify `_001E` for `zcol`. That references the specific variable we want to map - variable 1 in the table's estimate (or `E`). The `M` values refer to the margin of the error - we expect this estimate to be off by some amount within +/- this value.
+
+We can also download a specific column, like the median income for one-person households (`B19019_002`):
+
+```{r median-income-2}
+## download
+countyIncome <- get_acs(geography = "county", year = 2019, state = 29,
+                        variables = "B19019_002", output = "wide", 
+                        geometry = TRUE)
+
+## preview
+mapview(countyIncome, zcol = "B19019_002E")
+```
+
+## Combining Data Sources
+Perhaps we have a range of data that we want to include. For this example, we'll download data on median income and the proportion of women in tracts in Boone County, Missouri. We'll download the income data with `geometry = TRUE` and the sex data with `geometry = FALSE`:
+
+```{r download-boone}
+## download
+booneIncome <- get_acs(geography = "tract", year = 2019, state = 29,
+                       county = "019", variables = "B19019_001", 
+                       output = "wide", geometry = TRUE) %>%
+  rename(median_income = B19019_001E) %>%
+  select(GEOID, median_income)
+
+## download
+booneSex <- get_acs(geography = "tract", year = 2019, state = 29,
+                       county = "019", variables = c("B01001_001", "B01001_026"),
+                       output = "wide") %>%
+  mutate(pct_women = B01001_026E/B01001_001E*100) %>%
+  select(GEOID, pct_women)
+```
+
+To combine these data, we'll use `left_join()` from `dplyr`. Our `sf` object should always be the first object in the join (the `x` data) and our non-sf data should be the second data (the `y` data):
+
+```{r boone-join}
+boone <- left_join(booneIncome, booneSex, by = "GEOID")
+```
+
+Three common issues arise:
+
+  1. The ID columns are named differently: `by = c("GEOID" = "geoid")`
+  2. The ID columns are different type: `booneIncome <- mutate(GEOID = as.numeric(GEOID))`
+  3. Both objects are `sf` objects: `st_geometry(booneSEX) <- NULL`
+
+## Using Tigris
+To get data from the TIGER/line database, we can use the `tigris` package. You can see a full list of the data available [here](https://cran.r-project.org/web/packages/tigris/tigris.pdf).
+
+### State Data
+We can download a generalized version, which smooths out state boundaries so that the overall image is both smaller in disk size and (sometimes) easier to read. This is particularly helpful if you are making small scale maps of the entire United States. We'll get these data at the "20m" resolution using the `states()` function: 
+
+```{r get-states}
+states <- states(cb = TRUE, resolution = "20m")
+```
+
+### County Data
+Now, we'll get more detailed data - all of the county boundaries for Missouri. We'll use the `counties()` function using a slightly less generalized resolution, "5m":
+
+```{r get-counties}
+moCounties <- counties(cb = TRUE, resolution = "5m")
+```
+
+### Tract Data
+Now, we'll get even more detailed data - all of the tract boundaries for St. Charles County, Missouri. We'll use the `tracts()` function with `cb = FALSE` by default:
+
+```{r get-tracts}
+stCharlesTracts <- tracts(state = 29, county = 183)
+```
+
+```{r move-to-docs, include=FALSE}
+# you do need to include this in any notebook you create for this class
+fs::file_copy(here::here("examples", "module-examples-complete.nb.html"), 
+              here::here("docs", "index.nb.html"), 
+              overwrite = TRUE)
+```
