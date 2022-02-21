@@ -5,6 +5,7 @@ date: '(`r format(Sys.time(), "%B %d, %Y")`)'
 output: 
   github_document: default
   html_notebook: default 
+always_allow_html: true
 ---
 
 ```{r setup}
@@ -184,7 +185,7 @@ stCharlesTracts <- tracts(state = 29, county = 183)
 
 ```{r move-to-docs, include=FALSE}
 # you do need to include this in any notebook you create for this class
-fs::file_copy(here::here("examples", "module-examples-complete.nb.html"), 
+fs::file_copy(here::here("examples", "meeting-2-2-examples-complete.nb.html"), 
               here::here("docs", "index.nb.html"), 
               overwrite = TRUE)
 ```

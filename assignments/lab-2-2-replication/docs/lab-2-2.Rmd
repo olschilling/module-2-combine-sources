@@ -1,10 +1,11 @@
 ---
-title: "Lab-05 Replication Notebook"
+title: "Lab 2-2 Replication Notebook"
 author: "Christopher Prener, Ph.D."
 date: '(`r format(Sys.time(), "%B %d, %Y")`)'
 output: 
   github_document: default
   html_notebook: default 
+always_allow_html: true
 ---
 
 ```{r setup}
@@ -12,7 +13,7 @@ knitr::opts_chunk$set(cache = FALSE)
 ```
 
 ## Introduction
-This is the replication notebook for Lab-05 from the course SOC 4650/5650: Introduction to GISc.
+This is the replication notebook for Lab 2-2 from the course SOC 4650/5650: Introduction to GISc.
 
 ## Load Dependencies
 The following code loads the package dependencies for our analysis:
