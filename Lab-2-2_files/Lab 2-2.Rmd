@@ -1,0 +1,94 @@
+---
+title: "Lab 2-2"
+author: "Ollie L. Schilling"
+date: '(`r format(Sys.time(), "%B %d, %Y")`)'
+output: 
+  github_document: default
+  html_notebook: default 
+---
+
+```{r setup}
+knitr::opts_chunk$set(cache = FALSE)
+```
+
+## Introduction
+This notebook creates an sf object describing SNAP and Medicaid benefit usage in Missouri.
+
+## Dependencies
+This notebook requires...
+
+```{r load-packages}
+# tidyverse packages
+library(dplyr)       # data wrangling
+
+# spatial packages
+library(mapview)     # preview geometric data
+library(sf)          # spatial tools
+library(tidycensus)  # demographic data
+library(tigris)      # tiger/line data
+
+# other packages
+library(here)       # file path tools
+```
+
+## Part 1
+### Question 1
+This notebook requires both SNAP data and Medicaid data, to be joined.
+
+```{r preview-variables}
+acs <- load_variables(2019, "acs5", cache = TRUE) 
+```
+
+## Variables to map are:
+1. PUBLIC ASSISTANCE INCOME OR FOOD STAMPS/SNAP IN THE PAST 12 MONTHS FOR HOUSEHOLDS
+2. MEDICAID/MEANS-TESTED PUBLIC COVERAGE BY SEX BY AGE
+
+### Question 2
+This code will download the SNAP necessary data for the specified variables "B19058_001" and "B19058_002". The data will include all counties in Missouri.
+
+```{r download-snap-counties}
+snapCounties <- get_acs(geography = "county", year = 2019, state = 29, variables = c("B19058_001", "B19058_002"), output = "wide", geometry = TRUE )
+```
+```{r preview-snap-counties}
+mapview(snapCounties)
+```
+### Question 3
+This code will clean the snapCounties data.
+```{r clean-snap}
+snapCounties %>%
+  rename(total_pop = B19058_001E,
+    total_pop_mo = B19058_001M,
+    snap = B19058_002E,
+    snap_mo = B19058_002M) -> snapCounties
+```
+
+## Part 2
+### Question 4
+This code will download the necessary Medicaid data for the specified variables "C27007_002" and "C27007_012".
+```{r download-medicaid}
+medicaidCounties <- get_acs(geography = "county", year = 2019, state = 29, variables = c("C27007_002", "C27007_012"), output = "wide", geometry = FALSE)
+```
+### Question 5
+This code will clean the medicaid data.
+```{r clean-medicaid}
+medicaidCounties %>%
+  rename(
+    medicaid_male = C27007_002E,
+    medicaid_male_mo = C27007_002M,
+    medicaid_female = C27007_012E,
+    medicaid_female_mo = C27007_012M) %>%
+  mutate(medicaid = medicaid_male + medicaid_female) %>% 
+  select(-NAME) -> medicaidCounties
+```
+
+## Part 3
+### Question 6
+This code will join data sets together.
+```{r join-counties}
+services <- left_join(snapCounties, medicaidCounties, by = "GEOID")
+```
+#Preview the data
+```{r preview-counties}
+mapview(services, zcol = "medicaid")
+```
+A description of the results.
